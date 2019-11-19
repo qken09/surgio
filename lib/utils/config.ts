@@ -4,6 +4,7 @@ import _ from 'lodash';
 import path from 'path';
 
 import { CommandConfig } from '../types';
+import { PROXY_TEST_INTERVAL, PROXY_TEST_URL } from './constant';
 import { ensureConfigFolder } from './index';
 
 export const loadConfig = (cwd: string, configPath: string, override?: Partial<CommandConfig>): CommandConfig => {
@@ -37,7 +38,10 @@ export const normalizeConfig = (cwd: string, userConfig: Partial<CommandConfig>)
     configDir: ensureConfigFolder(),
     surgeConfig: {
       v2ray: 'external',
+      resolveHostname: false,
     },
+    proxyTestUrl: PROXY_TEST_URL,
+    proxyTestInterval: PROXY_TEST_INTERVAL,
   };
   const config: CommandConfig = _.defaultsDeep(userConfig, defaultConfig);
 
@@ -61,6 +65,7 @@ export const validateConfig = (userConfig: Partial<CommandConfig>): void => {
     combineProviders: Joi.array().items(Joi.string()),
     customParams: Joi.object(),
     proxyGroupModifier: Joi.function(),
+    destDir: Joi.string().pattern(/^\//),
   });
   const remoteSnippetSchema = Joi.object({
     url: Joi.string().uri({
@@ -87,13 +92,25 @@ export const validateConfig = (userConfig: Partial<CommandConfig>): void => {
       vmess: Joi.string().pattern(/^\//),
     }),
     surgeConfig: Joi.object({
-      v2ray: Joi.string().valid('native', 'external')
+      v2ray: Joi.string().valid('native', 'external'),
+      resolveHostname: Joi.boolean(),
     }),
     analytics: Joi.boolean(),
     gateway: Joi.object({
       accessToken: Joi.string(),
       auth: Joi.boolean(),
     }),
+    proxyTestUrl: Joi.string().uri({
+      scheme: [
+        /https?/,
+      ],
+    }),
+    proxyTestInterval: Joi.number(),
+    customFilters: Joi.object()
+      .pattern(
+        Joi.string(),
+        Joi.any().allow(Joi.function(), Joi.object({ filter: Joi.function(), supportSort: Joi.boolean() }))
+      ),
   })
     .unknown();
 

@@ -9,8 +9,10 @@ import {
   ShadowsocksrNodeConfig,
   SimpleNodeConfig,
   VmessNodeConfig,
+  SnellNodeConfig,
 } from '../../lib/types';
 import * as utils from '../../lib/utils';
+import { PROXY_TEST_INTERVAL, PROXY_TEST_URL } from '../../lib/utils/constant';
 import * as filter from '../../lib/utils/filter';
 
 test('getSurgeNodes', async t => {
@@ -130,14 +132,16 @@ test('getNodeNames', async t => {
     }
   ];
   const txt1 = utils.getNodeNames(nodeNameList);
+  const txt2 = utils.getNodeNames(nodeNameList, undefined, ':');
   const txt3 = utils.getNodeNames(nodeNameList, simpleNodeConfig => simpleNodeConfig.nodeName !== 'Test Node 3');
 
   t.is(txt1, 'Test Node 1, Test Node 3');
+  t.is(txt2, 'Test Node 1:Test Node 3');
   t.is(txt3, 'Test Node 1');
 });
 
 test('getClashNodes', async t => {
-  const nodeList: ReadonlyArray<ShadowsocksNodeConfig|VmessNodeConfig> = [{
+  const nodeList: ReadonlyArray<ShadowsocksNodeConfig|VmessNodeConfig|SnellNodeConfig> = [{
     nodeName: 'Test Node 1',
     type: NodeTypeEnum.Shadowsocks,
     hostname: 'example.com',
@@ -178,6 +182,13 @@ test('getClashNodes', async t => {
     tls: false,
     type: NodeTypeEnum.Vmess,
     uuid: '1386f85e-657b-4d6e-9d56-78badb75e1fd',
+  }, {
+    nodeName: 'snell',
+    type: NodeTypeEnum.Snell,
+    hostname: '1.1.1.1',
+    port: 443,
+    psk: 'psk',
+    obfs: 'tls',
   }];
   const array = utils.getClashNodes(nodeList);
 
@@ -229,6 +240,16 @@ test('getClashNodes', async t => {
     type: 'vmess',
     uuid: '1386f85e-657b-4d6e-9d56-78badb75e1fd',
   });
+  t.deepEqual(array[4], {
+    name: 'snell',
+    type: 'snell',
+    server: '1.1.1.1',
+    port: 443,
+    psk: 'psk',
+    'obfs-opts': {
+      mode: 'tls',
+    },
+  })
 });
 
 test('getShadowsocksNodes', async t => {
@@ -285,6 +306,18 @@ test('normalizeClashProxyGroupConfig', t => {
         proxies: ['DIRECT'],
         type: 'url-test',
       },
+      {
+        name: 'load-balance',
+        filter: filters.hkFilter,
+        proxies: ['🚀 Proxy', 'US'],
+        type: 'load-balance',
+      },
+      {
+        name: 'fallback-auto',
+        filter: filters.hkFilter,
+        proxies: ['🚀 Proxy', 'US'],
+        type: 'fallback',
+      },
     ];
   }
   const result = [
@@ -297,15 +330,15 @@ test('normalizeClashProxyGroupConfig', t => {
       name: 'US',
       type: 'url-test',
       proxies: [],
-      url: 'http://www.qualcomm.cn/generate_204',
-      interval: 1200,
+      url: PROXY_TEST_URL,
+      interval: PROXY_TEST_INTERVAL,
     },
     {
       name: 'HK',
       type: 'url-test',
       proxies: ['🇭🇰HK(Example)'],
-      url: 'http://www.qualcomm.cn/generate_204',
-      interval: 1200,
+      url: PROXY_TEST_URL,
+      interval: PROXY_TEST_INTERVAL,
     },
     {
       name: '🍎 Apple',
@@ -316,24 +349,48 @@ test('normalizeClashProxyGroupConfig', t => {
       name: 'Mixed',
       proxies: ['DIRECT', '🇭🇰HK(Example)'],
       type: 'url-test',
-      url: 'http://www.qualcomm.cn/generate_204',
-      interval: 1200,
+      url: PROXY_TEST_URL,
+      interval: PROXY_TEST_INTERVAL,
+    },
+    {
+      name: 'load-balance',
+      type: 'load-balance',
+      proxies: ['🚀 Proxy', 'US', '🇭🇰HK(Example)'],
+      url: PROXY_TEST_URL,
+      interval: PROXY_TEST_INTERVAL,
+    },
+    {
+      name: 'fallback-auto',
+      type: 'fallback',
+      proxies: ['🚀 Proxy', 'US', '🇭🇰HK(Example)'],
+      url: PROXY_TEST_URL,
+      interval: PROXY_TEST_INTERVAL,
     },
   ];
 
-  t.deepEqual(utils.normalizeClashProxyGroupConfig([
-    {
-      nodeName: '🇭🇰HK(Example)',
-      type: NodeTypeEnum.Shadowsocks,
-      hostname: 'example.com',
-      port: '8443',
-      method: 'chacha20-ietf-poly1305',
-      password: 'password',
-    },
-  ], {
-    hkFilter: filter.hkFilter,
-    usFilter: filter.usFilter,
-  }, proxyGroupModifier as any), result);
+  t.deepEqual(
+    utils.normalizeClashProxyGroupConfig(
+      [
+        {
+          nodeName: '🇭🇰HK(Example)',
+          type: NodeTypeEnum.Shadowsocks,
+          hostname: 'example.com',
+          port: '8443',
+          method: 'chacha20-ietf-poly1305',
+          password: 'password',
+        },
+      ],
+      {
+        hkFilter: filter.hkFilter,
+        usFilter: filter.usFilter,
+      },
+      proxyGroupModifier as any,
+      {
+        proxyTestUrl: PROXY_TEST_URL,
+        proxyTestInterval: PROXY_TEST_INTERVAL,
+      }
+    ),
+    result);
 });
 
 test('getShadowsocksJSONConfig', async t => {
@@ -726,15 +783,27 @@ test('getQuantumultXNodes', t => {
       'obfs-host': 'gateway-carry.icloud.com',
       tfo: true,
     },
+    {
+      type: NodeTypeEnum.Vmess,
+      alterId: '64',
+      hostname: '1.1.1.1',
+      method: 'auto',
+      network: 'tcp',
+      nodeName: '测试 4',
+      port: 443,
+      tls: true,
+      uuid: '1386f85e-657b-4d6e-9d56-78badb75e1fd',
+    },
   ])
     .split('\n');
 
-  t.is(schemeList[0], 'vmess=1.1.1.1:8080, method=auto, password=1386f85e-657b-4d6e-9d56-78badb75e1fd, obfs=ws, obfs-uri=/, tag=测试 1');
-  t.is(schemeList[1], 'vmess=1.1.1.1:8080, method=auto, password=1386f85e-657b-4d6e-9d56-78badb75e1fd, tag=测试 2');
-  t.is(schemeList[2], 'vmess=1.1.1.1:8080, method=auto, password=1386f85e-657b-4d6e-9d56-78badb75e1fd, obfs=ws, obfs-uri=/, tag=测试 3');
+  t.is(schemeList[0], 'vmess=1.1.1.1:8080, method=chacha20-ietf-poly1305, password=1386f85e-657b-4d6e-9d56-78badb75e1fd, udp-relay=true, obfs=ws, obfs-uri=/, obfs-host=example.com, tag=测试 1');
+  t.is(schemeList[1], 'vmess=1.1.1.1:8080, method=chacha20-ietf-poly1305, password=1386f85e-657b-4d6e-9d56-78badb75e1fd, udp-relay=true, tag=测试 2');
+  t.is(schemeList[2], 'vmess=1.1.1.1:8080, method=chacha20-ietf-poly1305, password=1386f85e-657b-4d6e-9d56-78badb75e1fd, udp-relay=true, obfs=ws, obfs-uri=/, obfs-host=1.1.1.1, tag=测试 3');
   t.is(schemeList[3], 'shadowsocks=hk.example.com:10000, method=chacha20-ietf, password=password, ssr-protocol=auth_aes128_md5, ssr-protocol-param=, obfs=tls1.2_ticket_auth, obfs-host=music.163.com, tag=🇭🇰HK');
   t.is(schemeList[4], 'http=a.com:443, username=snsms, password=nndndnd, over-tls=true, tag=test');
   t.is(schemeList[5], 'shadowsocks=us.example.com:443, method=chacha20-ietf-poly1305, password=password, obfs=tls, obfs-host=gateway-carry.icloud.com, udp-relay=true, fast-open=true, tag=🇺🇸US 1');
+  t.is(schemeList[6], 'vmess=1.1.1.1:443, method=chacha20-ietf-poly1305, password=1386f85e-657b-4d6e-9d56-78badb75e1fd, udp-relay=true, obfs=over-tls, tag=测试 4')
 });
 
 test('formatV2rayConfig', t => {

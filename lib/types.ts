@@ -40,12 +40,18 @@ export interface CommandConfig {
     vmess?: string; // tslint:disable-line
   };
   readonly surgeConfig?: {
-    readonly v2ray: 'native'|'external';
+    readonly v2ray?: 'native'|'external';
+    readonly resolveHostname?: boolean;
   };
   readonly gateway?: {
     readonly accessToken?: string;
     readonly auth?: boolean;
   },
+  readonly proxyTestUrl?: string;
+  readonly proxyTestInterval?: number;
+  readonly customFilters?: {
+    readonly [name: string]: NodeNameFilterType|SortedNodeNameFilterType;
+  };
 }
 
 export interface RemoteSnippetConfig {
@@ -64,16 +70,17 @@ export interface ArtifactConfig {
   readonly combineProviders?: ReadonlyArray<string>;
   readonly customParams?: PlainObjectOf<string|boolean|number>;
   readonly proxyGroupModifier?: ProxyGroupModifier;
+  readonly destDir?: string;
 }
 
 export interface ProviderConfig {
   readonly type: SupportProviderEnum;
-  readonly nodeFilter?: NodeFilterType;
-  readonly netflixFilter?: NodeNameFilterType;
-  readonly youtubePremiumFilter?: NodeNameFilterType;
+  readonly nodeFilter?: NodeFilterType|SortedNodeNameFilterType;
+  readonly netflixFilter?: NodeNameFilterType|SortedNodeNameFilterType;
+  readonly youtubePremiumFilter?: NodeNameFilterType|SortedNodeNameFilterType;
   readonly startPort?: number;
   readonly customFilters?: {
-    readonly [name: string]: NodeNameFilterType;
+    readonly [name: string]: NodeNameFilterType|SortedNodeNameFilterType;
   };
   readonly addFlag?: boolean;
   readonly tfo?: boolean;
@@ -174,6 +181,7 @@ export interface SimpleNodeConfig {
   binPath?: string; // tslint:disable-line
   localPort?: number; // tslint:disable-line
   surgeConfig?: CommandConfig['surgeConfig']; // tslint:disable-line
+  hostnameIp?: ReadonlyArray<string>; // tslint:disable-line
 }
 
 export interface PlainObject { readonly [name: string]: any }
@@ -183,11 +191,16 @@ export type NodeFilterType = (nodeConfig: PossibleNodeConfigType) => boolean;
 
 export type NodeNameFilterType = (simpleNodeConfig: SimpleNodeConfig) => boolean;
 
+export interface SortedNodeNameFilterType {
+  readonly filter: <T>(nodeList: ReadonlyArray<T & SimpleNodeConfig>) => ReadonlyArray<T & SimpleNodeConfig>;
+  readonly supportSort?: boolean;
+}
+
 export type PossibleNodeConfigType = HttpsNodeConfig|ShadowsocksNodeConfig|ShadowsocksrNodeConfig|SnellNodeConfig|VmessNodeConfig;
 
-export type ProxyGroupModifier = (nodeList: ReadonlyArray<PossibleNodeConfigType>, filters: PlainObjectOf<NodeNameFilterType>) => ReadonlyArray<{
+export type ProxyGroupModifier = (nodeList: ReadonlyArray<PossibleNodeConfigType>, filters: PlainObjectOf<NodeNameFilterType|SortedNodeNameFilterType>) => ReadonlyArray<{
   readonly name: string;
-  readonly type: 'select' | 'url-test';
+  readonly type: 'select'|'url-test'|'fallback'|'load-balance';
   readonly proxies?: ReadonlyArray<string>;
   readonly filter?: NodeNameFilterType;
 }>;

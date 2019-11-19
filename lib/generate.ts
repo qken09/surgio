@@ -1,6 +1,7 @@
 'use strict';
 
 import assert from 'assert';
+import Bluebird from 'bluebird';
 import chalk from 'chalk';
 import fs from 'fs-extra';
 import _ from 'lodash';
@@ -11,14 +12,13 @@ import getEngine from './template';
 import {
   ArtifactConfig,
   CommandConfig,
-  NodeNameFilterType,
+  NodeNameFilterType, NodeTypeEnum,
   PossibleNodeConfigType,
   ProviderConfig,
   RemoteSnippet,
   SimpleNodeConfig,
 } from './types';
 import {
-  getClashNodeNames,
   getClashNodes,
   getDownloadUrl,
   getNodeNames,
@@ -28,19 +28,23 @@ import {
   getShadowsocksNodesJSON,
   getShadowsocksrNodes,
   getSurgeNodes,
+  getMellowNodes,
   loadRemoteSnippetList,
   normalizeClashProxyGroupConfig,
   toBase64,
   toUrlSafeBase64,
 } from './utils';
+import { isIp, resolveDomain } from './utils/dns';
 import {
   hkFilter, japanFilter, koreaFilter,
   netflixFilter as defaultNetflixFilter, singaporeFilter, taiwanFilter,
-  usFilter,
+  usFilter, validateFilter,
   youtubePremiumFilter as defaultYoutubePremiumFilter,
 } from './utils/filter';
 import getProvider from './utils/get-provider';
 import { prependFlag } from './utils/flag';
+import { NETWORK_CONCURRENCY } from './utils/constant';
+import Provider from './class/Provider';
 
 const spinner = ora();
 
@@ -59,7 +63,14 @@ async function run(config: CommandConfig): Promise<void> {
     try {
       const result = await generate(config, artifact, remoteSnippetList);
       const destFilePath = path.join(config.output, artifact.name);
-      await fs.writeFile(destFilePath, result);
+
+      if (artifact.destDir) {
+        fs.accessSync(artifact.destDir, fs.constants.W_OK);
+        await fs.writeFile(path.join(artifact.destDir, artifact.name), result);
+      } else {
+        await fs.writeFile(destFilePath, result);
+      }
+
       spinner.succeed(`规则 ${artifact.name} 生成成功`);
     } catch (err) {
       spinner.fail(`规则 ${artifact.name} 生成失败`);
@@ -86,75 +97,112 @@ export async function generate(
 
   const gatewayConfig = config.gateway;
   const gatewayHasToken: boolean = !!(gatewayConfig && gatewayConfig.accessToken);
+  const mainProviderName = artifact.provider;
   const combineProviders = artifact.combineProviders || [];
-  const providerList = [artifact.provider].concat(combineProviders);
+  const providerList = [mainProviderName].concat(combineProviders);
   const nodeList: PossibleNodeConfigType[] = [];
   const nodeNameList: SimpleNodeConfig[] = [];
   let customFilters: ProviderConfig['customFilters'];
-  let netflixFilter: NodeNameFilterType;
-  let youtubePremiumFilter: NodeNameFilterType;
+  let netflixFilter: ProviderConfig['netflixFilter'];
+  let youtubePremiumFilter: ProviderConfig['youtubePremiumFilter'];
+  let progress = 0;
 
   if (config.binPath && config.binPath.v2ray) {
     config.binPath.vmess = config.binPath.v2ray;
   }
 
-  for (const providerName of providerList) {
+  const providerMapper = async (providerName: string): Promise<void> => {
     const filePath = path.resolve(config.providerDir, `${providerName}.js`);
 
     if (!fs.existsSync(filePath)) {
       throw new Error(`文件 ${filePath} 不存在`);
     }
 
-    spinner.text = `正在处理 Provider: ${providerName}`;
-    let provider;
-    let nodeConfigList;
+    let provider: Provider;
+    let nodeConfigList: ReadonlyArray<PossibleNodeConfigType>;
 
     try {
       provider = getProvider(require(filePath));
     } catch (err) {
-      err.message = `处理 Provider 时出现错误，相关文件 ${filePath} ，错误原因: ${err.message}`;
+      err.message = `处理 ${chalk.cyan(providerName)} 时出现错误，相关文件 ${filePath} ，错误原因: ${err.message}`;
       throw err;
     }
 
     try {
       nodeConfigList = await provider.getNodeList();
     } catch (err) {
-      err.message = `获取 Provider 节点时出现错误，相关文件 ${filePath} ，错误原因: ${err.message}`;
+      err.message = `获取 ${chalk.cyan(providerName)} 节点时出现错误，相关文件 ${filePath} ，错误原因: ${err.message}`;
       throw err;
     }
 
     // Filter 仅使用第一个 Provider 中的定义
-    if (!netflixFilter) {
-      netflixFilter = provider.netflixFilter || defaultNetflixFilter;
-    }
-    if (!youtubePremiumFilter) {
-      youtubePremiumFilter = provider.youtubePremiumFilter || defaultYoutubePremiumFilter;
-    }
-    if (!customFilters) {
-      customFilters = provider.customFilters || {};
+    if (providerName === mainProviderName) {
+      if (!netflixFilter) {
+        netflixFilter = provider.netflixFilter || defaultNetflixFilter;
+      }
+      if (!youtubePremiumFilter) {
+        youtubePremiumFilter = provider.youtubePremiumFilter || defaultYoutubePremiumFilter;
+      }
+      if (!customFilters) {
+        customFilters = {
+          ...config.customFilters,
+          ...provider.customFilters,
+        };
+      }
     }
 
-    nodeConfigList.forEach(nodeConfig => {
+    if (
+      validateFilter(provider.nodeFilter) &&
+      typeof provider.nodeFilter === 'object' &&
+      provider.nodeFilter.supportSort
+    ) {
+      nodeConfigList = provider.nodeFilter.filter(nodeConfigList);
+    }
+
+    nodeConfigList = await Bluebird.map(nodeConfigList, async nodeConfig => {
       let isValid = false;
+
+      if (nodeConfig.enable === false) {
+        return null;
+      }
 
       if (!provider.nodeFilter) {
         isValid = true;
-      } else if (provider.nodeFilter(nodeConfig)) {
-        isValid = true;
-      }
-
-      if (config.binPath && config.binPath[nodeConfig.type]) {
-        nodeConfig.binPath = config.binPath[nodeConfig.type];
-        nodeConfig.localPort = provider.nextPort;
-      }
-
-      nodeConfig.surgeConfig = config.surgeConfig;
-
-      if (provider.addFlag) {
-        nodeConfig.nodeName = prependFlag(nodeConfig.nodeName);
+      } else if (validateFilter(provider.nodeFilter)) {
+        isValid = typeof provider.nodeFilter === 'function' ?
+          provider.nodeFilter(nodeConfig) :
+          true;
       }
 
       if (isValid) {
+        if (config.binPath && config.binPath[nodeConfig.type]) {
+          nodeConfig.binPath = config.binPath[nodeConfig.type];
+          nodeConfig.localPort = provider.nextPort;
+        }
+
+        nodeConfig.surgeConfig = config.surgeConfig;
+
+        if (provider.addFlag) {
+          nodeConfig.nodeName = prependFlag(nodeConfig.nodeName);
+        }
+
+        if (
+          config.surgeConfig.resolveHostname &&
+          !isIp(nodeConfig.hostname) &&
+          [NodeTypeEnum.Vmess, NodeTypeEnum.Shadowsocksr].includes(nodeConfig.type)
+        ) {
+          nodeConfig.hostnameIp = await resolveDomain(nodeConfig.hostname);
+        }
+
+        return nodeConfig;
+      }
+
+      return null;
+    })
+      .filter(item => !!item);
+
+    nodeConfigList.forEach(nodeConfig => {
+      if (nodeConfig) {
         nodeNameList.push({
           type: nodeConfig.type,
           enable: nodeConfig.enable,
@@ -163,16 +211,18 @@ export async function generate(
         nodeList.push(nodeConfig);
       }
     });
-  }
+
+    spinner.text = `已处理 Provider ${++progress}/${providerList.length}...`;
+  };
+
+  await Bluebird.map(providerList, providerMapper, { concurrency: NETWORK_CONCURRENCY });
 
   try {
     return templateEngine.render(`${template}.tpl`, {
       downloadUrl: getDownloadUrl(config.urlBase, artifactName, true, gatewayHasToken ? gatewayConfig.accessToken : undefined),
       nodes: nodeList,
       names: nodeNameList,
-      remoteSnippets: _.keyBy(remoteSnippetList, item => {
-        return item.name;
-      }),
+      remoteSnippets: _.keyBy(remoteSnippetList, item => item.name),
       nodeList,
       provider: artifact.provider,
       providerName: artifact.provider,
@@ -180,13 +230,13 @@ export async function generate(
       getDownloadUrl: (name: string) => getDownloadUrl(config.urlBase, name, true, gatewayHasToken ? gatewayConfig.accessToken : undefined),
       getNodeNames,
       getClashNodes,
-      getClashNodeNames,
       getSurgeNodes,
       getShadowsocksNodes,
       getShadowsocksNodesJSON,
       getShadowsocksrNodes,
       getQuantumultNodes,
       getQuantumultXNodes,
+      getMellowNodes,
       usFilter,
       hkFilter,
       japanFilter,
@@ -216,7 +266,11 @@ export async function generate(
               youtubePremiumFilter,
               ...customFilters,
             },
-            artifact.proxyGroupModifier
+            artifact.proxyGroupModifier,
+            {
+              proxyTestUrl: config.proxyTestUrl,
+              proxyTestInterval: config.proxyTestInterval,
+            },
           ),
         },
       } : {}),

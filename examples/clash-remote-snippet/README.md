@@ -1,8 +1,6 @@
-# Example - QuantumultX
+# Example - Clash
 
-对于 QuantumultX 来说，根据国别来生成托管文件是一个比较好的管理方式。
-
-在使用本仓库之前，你需要配置好阿里云 OSS，这样才能让 QuantumultX 下载到托管文件。
+该样例生成的规则可以用于所有的 Clash 客户端。
 
 在这个案例中，引用了 [神机规则](https://github.com/ConnersHua/Profiles/tree/master/Surge)，你也可以用相似的方法引用其它的远程片段。需要注意的是，我们只能引用 Surge 的远程片段，而非 QuantumultX 的规则。
 

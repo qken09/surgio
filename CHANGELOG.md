@@ -1,3 +1,117 @@
+# [1.5.0](https://github.com/geekdada/surgio/compare/v1.4.3...v1.5.0) (2019-11-18)
+
+
+### Bug Fixes
+
+* 空文件不会返回 404 ([271c398](https://github.com/geekdada/surgio/commit/271c398df29e8e3da2f4f22d6aa2d78aa49f122c))
+* 某些情况下 clash 配置没有输出 interval 和 url ([1978429](https://github.com/geekdada/surgio/commit/197842956a96fd35b91afd77cf358c1697ac7097))
+
+
+### Features
+
+* 增加规则过滤关键词 ([128f648](https://github.com/geekdada/surgio/commit/128f64835ccde09b4b0dda54e4075dc0218fbc10))
+* 支持排序类型的过滤器 ([db69447](https://github.com/geekdada/surgio/commit/db694473b1b88e44811971fbc0cd8761d0fcf4e3))
+* 支持在输出 external 时解析域名 ([1f78f44](https://github.com/geekdada/surgio/commit/1f78f44dde2949e384184d8fa59f566a45ed2d64))
+* nodeFilter 也支持过滤排序 ([6dd7f66](https://github.com/geekdada/surgio/commit/6dd7f665d26ad427f026786d5add8c578084f816))
+
+
+
+## [1.4.3](https://github.com/geekdada/surgio/compare/v1.4.2...v1.4.3) (2019-11-15)
+
+
+### Bug Fixes
+
+* 某些情况下 Provider 中的 customFilters 未生效 ([48f1b32](https://github.com/geekdada/surgio/commit/48f1b321a2c4fbc6859b67a8975f1c9529bfaa20))
+
+
+
+## [1.4.2](https://github.com/geekdada/surgio/compare/v1.4.1...v1.4.2) (2019-11-14)
+
+
+### Features
+
+* 优化远程片段获取的并发请求 ([7552fa0](https://github.com/geekdada/surgio/commit/7552fa05b073871aa6a50472f2386bfa4fa9421d))
+* Provider 处理改为并发 ([8bf2738](https://github.com/geekdada/surgio/commit/8bf2738f14f9d30b9bfbf6999fbbdf91a5993469))
+
+
+
+## [1.4.1](https://github.com/geekdada/surgio/compare/v1.4.0...v1.4.1) (2019-11-13)
+
+
+### Bug Fixes
+
+* clash 策略名错误 ([9f2eaac](https://github.com/geekdada/surgio/commit/9f2eaacb851a2b993412ae30be8946a9408df87a))
+
+
+
+# [1.4.0](https://github.com/geekdada/surgio/compare/v1.3.5...v1.4.0) (2019-11-13)
+
+
+### Bug Fixes
+
+* 由于 mellow 对 shadowsocks 支持有限，忽略该类型节点 ([8ae0561](https://github.com/geekdada/surgio/commit/8ae056194b938014eee4c0bebfb38ecf3de7cb10))
+* Close [#35](https://github.com/geekdada/surgio/issues/35) ([491b655](https://github.com/geekdada/surgio/commit/491b655bc8061ed120ab119bd5e4ac57859ea095))
+
+
+### Features
+
+* 可配置 Clash 的 proxy test url ([89b0b92](https://github.com/geekdada/surgio/commit/89b0b926a5ee5011f9b11cfe4d0a0c745c9ca890))
+* 增加 mellow 规则处理方法 ([b646199](https://github.com/geekdada/surgio/commit/b646199507d7558bd00daa89f4877501391e2605))
+* 支持 Clash 的 'fallback-auto', 'load-balance' 策略 ([18f106f](https://github.com/geekdada/surgio/commit/18f106fee8c94c01bbf8a4a34fadfcd9557fdd2b)), closes [#34](https://github.com/geekdada/surgio/issues/34)
+* 支持单独定义某个 artifact 的输出目录 ([bef00c7](https://github.com/geekdada/surgio/commit/bef00c7d9894476c695229a6e96f1d3f47fd91b1))
+* 支持导出 Mellow 节点 ([9a72ca2](https://github.com/geekdada/surgio/commit/9a72ca2ac7b9b59ee3c1b61180fd8fe915330ad8))
+* 支持在 surgio.conf.js 中定义全局 customFilters ([1701b85](https://github.com/geekdada/surgio/commit/1701b85d68e487b52fb529243d8826ee4b5a99a8))
+
+
+
+## [1.3.5](https://github.com/geekdada/surgio/compare/v1.3.4...v1.3.5) (2019-11-08)
+
+
+### Bug Fixes
+
+* QuantumultX 的兼容性问题 ([dfb5c2e](https://github.com/geekdada/surgio/commit/dfb5c2e7b04df85b24a1ca67bde9136ae8c68b97))
+
+
+
+## [1.3.4](https://github.com/geekdada/surgio/compare/v1.3.3...v1.3.4) (2019-11-07)
+
+
+### Bug Fixes
+
+* vmess method 为 auto 时 qx 会无法识别 ([9adbe77](https://github.com/geekdada/surgio/commit/9adbe776dd1c9743be6878e6610dfb37a0ca4fc5))
+
+
+### Features
+
+* add snell support for clash output [#33](https://github.com/geekdada/surgio/issues/33) ([8c3df9e](https://github.com/geekdada/surgio/commit/8c3df9e97d9b22258f5aa99c8a89fdc6220b0f78))
+
+
+
+## [1.3.3](https://github.com/geekdada/surgio/compare/v1.3.2...v1.3.3) (2019-11-06)
+
+
+### Bug Fixes
+
+* 没有在 QuantumultX vmess 节点中添加 obfs-host ([2d9ceb5](https://github.com/geekdada/surgio/commit/2d9ceb542eba4a3d7b770e3e46accb792201c28e))
+
+
+### Features
+
+* 面板增加添加 Clash 的按钮 ([b66e5f3](https://github.com/geekdada/surgio/commit/b66e5f31dae975ccac83742666ea7385a6e023e0))
+* check command ([2db635f](https://github.com/geekdada/surgio/commit/2db635ff91cd786daa6852abdd82896ab213f3ab))
+
+
+
+## [1.3.2](https://github.com/geekdada/surgio/compare/v1.3.1...v1.3.2) (2019-11-05)
+
+
+### Features
+
+* youtubePremiumFilter 增加香港 ([821bf3c](https://github.com/geekdada/surgio/commit/821bf3c653767490bf093e0980be091b28f3501d))
+* youtubePremiumFilter 增加新加坡 ([7b32873](https://github.com/geekdada/surgio/commit/7b32873ff906156208ae7a03ea8002534a794c57))
+
+
+
 ## [1.3.1](https://github.com/geekdada/surgio/compare/v1.3.0...v1.3.1) (2019-11-03)
 
 

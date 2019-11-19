@@ -111,12 +111,15 @@ test('custom filter', async t => {
     cwd: resolve('custom-filter'),
     execArgv: ['--require', require.resolve('./stub-axios.js')],
   })
+    .debug()
     .end();
-  const confString = fs.readFileSync(resolve('custom-filter/dist/ss.conf'), {
+  const confString1 = fs.readFileSync(resolve('custom-filter/dist/ss.conf'), {
     encoding: 'utf8',
   });
-  const conf = ini.decode(confString);
+  const confString2 = fs.readFileSync(resolve('custom-filter/dist/test_sorted_filter.conf'), {
+    encoding: 'utf8',
+  });
 
-  t.is(conf['Proxy Group']['Proxy 1'], 'select, 🇺🇸US 1, 🇺🇸US 2');
-  t.is(conf['Proxy Group']['Proxy 2'], 'select,');
+  t.snapshot(confString1);
+  t.snapshot(confString2);
 });
