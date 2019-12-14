@@ -1,6 +1,5 @@
 import assert from 'assert';
 import axios from 'axios';
-import Bluebird from 'bluebird';
 import chalk from 'chalk';
 import fs from 'fs-extra';
 import _ from 'lodash';
@@ -8,14 +7,13 @@ import LRU from 'lru-cache';
 import path from 'path';
 import queryString from 'query-string';
 import { JsonObject } from 'type-fest';
-import URL from 'url';
+import { default as legacyUrl, URL } from 'url';
 import URLSafeBase64 from 'urlsafe-base64';
 import YAML from 'yaml';
 import os from 'os';
 import Debug from 'debug';
 
 import {
-  CommandConfig,
   HttpsNodeConfig,
   NodeFilterType,
   NodeNameFilterType,
@@ -23,8 +21,6 @@ import {
   PlainObjectOf,
   PossibleNodeConfigType,
   ProxyGroupModifier,
-  RemoteSnippet,
-  RemoteSnippetConfig,
   ShadowsocksNodeConfig,
   ShadowsocksrNodeConfig,
   SimpleNodeConfig,
@@ -34,13 +30,18 @@ import {
 } from '../types';
 import { validateFilter } from './filter';
 import { parseSSRUri } from './ssr';
-import { OBFS_UA, NETWORK_TIMEOUT, NETWORK_CONCURRENCY, PROXY_TEST_URL, PROXY_TEST_INTERVAL } from './constant';
+import {
+  OBFS_UA,
+  NETWORK_TIMEOUT,
+  PROXY_TEST_URL,
+  PROXY_TEST_INTERVAL,
+} from './constant';
 import { formatVmessUri } from './v2ray';
 
 const debug = Debug('surgio:utils');
 
 export const ConfigCache = new LRU<string, any>({
-  maxAge: 10 * 60 * 1000, // 1min
+  maxAge: 10 * 60 * 1000, // 10min
 });
 
 // istanbul ignore next
@@ -48,7 +49,7 @@ export const resolveRoot = (...args: readonly string[]): string =>
   path.join(__dirname, '../../', ...args);
 
 export const getDownloadUrl = (baseUrl: string = '/', artifactName: string, inline: boolean = true, accessToken?: string): string => {
-  const urlObject = URL.parse(`${baseUrl}${artifactName}`, true);
+  const urlObject = legacyUrl.parse(`${baseUrl}${artifactName}`, true);
 
   if (accessToken) {
     urlObject.query.access_token = accessToken;
@@ -58,7 +59,10 @@ export const getDownloadUrl = (baseUrl: string = '/', artifactName: string, inli
     urlObject.query.dl = '1';
   }
 
-  return URL.format(urlObject);
+  // tslint:disable-next-line:no-delete
+  delete urlObject.search;
+
+  return legacyUrl.format(urlObject);
 };
 
 // istanbul ignore next
@@ -168,9 +172,9 @@ export const getShadowsocksSubscription = async (
       .filter(item => !!item && item.startsWith("ss://"));
     const result = configList.map<any>(item => {
       debug('SS URI', item);
-      const scheme = URL.parse(item, true);
+      const scheme = legacyUrl.parse(item, true);
       const userInfo = fromUrlSafeBase64(scheme.auth).split(':');
-      const pluginInfo = typeof scheme.query.plugin === 'string' ? decodeStringList<any>(scheme.query.plugin.split(';')) : {};
+      const pluginInfo = typeof scheme.query.plugin === 'string' ? decodeStringList(scheme.query.plugin.split(';')) : {};
 
       return {
         type: NodeTypeEnum.Shadowsocks,
@@ -388,9 +392,9 @@ export const getSurgeNodes = (
 
           if (config.hostnameIp) {
             configString.push(...config.hostnameIp.map(item => `addresses = ${item}`));
-          } else {
-            configString.push(`addresses = ${config.hostname}`);
           }
+
+          configString.push(`addresses = ${config.hostname}`);
 
           return ([
             config.nodeName,
@@ -461,9 +465,9 @@ export const getSurgeNodes = (
 
             if (config.hostnameIp) {
               configString.push(...config.hostnameIp.map(item => `addresses = ${item}`));
-            } else {
-              configString.push(`addresses = ${config.hostname}`);
             }
+
+            configString.push(`addresses = ${config.hostname}`);
 
             if (process.env.NODE_ENV !== 'test') {
               fs.writeJSONSync(jsonFilePath, jsonFile);
@@ -1005,10 +1009,19 @@ export const getClashNodeNames = (
   readonly url?: string;
   readonly interval?: number;
 } => {
-  const nodes = applyFilter(nodeNameList, options.filter);
-  const proxies = options.existingProxies ?
-    [].concat(options.existingProxies, nodes.map(item => item.nodeName)) :
-    nodes.map(item => item.nodeName);
+  let proxies;
+
+  if (options.existingProxies) {
+    if (options.filter) {
+      const nodes = applyFilter(nodeNameList, options.filter);
+      proxies = [].concat(options.existingProxies, nodes.map(item => item.nodeName));
+    } else {
+      proxies = options.existingProxies;
+    }
+  } else {
+    const nodes = applyFilter(nodeNameList, options.filter);
+    proxies = nodes.map(item => item.nodeName);
+  }
 
   return {
     type: ruleType,
@@ -1033,7 +1046,7 @@ export const pickAndFormatStringList = (obj: object, keyList: readonly string[])
   return result;
 };
 
-export const decodeStringList = <T = object>(stringList: ReadonlyArray<string>): T => {
+export const decodeStringList = <T = Record<string, string|boolean>>(stringList: ReadonlyArray<string>): T => {
   const result = {};
   stringList.forEach(item => {
     const pair = item.split('=');
@@ -1066,78 +1079,13 @@ export const normalizeClashProxyGroupConfig = (
         proxyTestUrl: options.proxyTestUrl,
         proxyTestInterval: options.proxyTestInterval,
       });
-    } else if (item.proxies) {
-      return item;
     } else {
       return getClashNodeNames(item.name, item.type, nodeList, {
+        existingProxies: item.proxies,
         proxyTestUrl: options.proxyTestUrl,
         proxyTestInterval: options.proxyTestInterval,
       });
     }
-  });
-};
-
-export const addProxyToSurgeRuleSet = (str: string, rule: string): string => {
-  const result: string[] = [];
-
-  str
-    .split('\n')
-    .filter(item => item && item.trim() !== '')
-    .forEach(item => {
-      if (!item.startsWith('#') && !item.startsWith('//')) {
-        const comment = item.split('//');
-        const line = comment[0].trim().split(',');
-
-        if (line.length === 2) {
-          line.push(rule);
-        } else {
-          line.splice(2, 0, rule);
-        }
-
-        result.push(line.join(',') + (comment[1] ? ` //${comment[1]}` : ''));
-      } else {
-        result.push(item);
-      }
-    });
-
-  return result.join('\n');
-};
-
-export const loadRemoteSnippetList = (remoteSnippetList: ReadonlyArray<RemoteSnippetConfig>): Promise<ReadonlyArray<RemoteSnippet>> => {
-  function load(url: string): Promise<string> {
-    console.log(`正在下载远程片段: ${url}`);
-
-    return axios.get<string>(url, {
-      timeout: NETWORK_TIMEOUT,
-      responseType: 'text',
-    })
-      .then(data => {
-        console.log(`远程片段下载成功: ${url}`);
-        return data.data;
-      })
-      .catch(err => {
-        console.error(`远程片段下载失败: ${url}`);
-        throw err;
-      });
-  }
-
-  return Bluebird.map(remoteSnippetList, item => {
-    const res = ConfigCache.has(item.url)
-      ? Promise.resolve(ConfigCache.get(item.url)) :
-      load(item.url)
-        .then(str => {
-          ConfigCache.set(item.url, str);
-          return str;
-        });
-
-    return res.then(str => ({
-      main: (rule: string) => addProxyToSurgeRuleSet(str, rule),
-      name: item.name,
-      url: item.url,
-      text: str, // 原始内容
-    }));
-  }, {
-    concurrency: NETWORK_CONCURRENCY,
   });
 };
 

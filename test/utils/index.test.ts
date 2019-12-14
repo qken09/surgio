@@ -276,6 +276,7 @@ test('getDownloadUrl', t => {
   t.is(utils.getDownloadUrl(undefined, 'test.conf'), '/test.conf');
   t.is(utils.getDownloadUrl(undefined, 'test.conf', false), '/test.conf?dl=1');
   t.is(utils.getDownloadUrl(undefined, 'test.conf', undefined, 'abcd'), '/test.conf?access_token=abcd');
+  t.is(utils.getDownloadUrl('https://example.com/', 'test.conf?foo=bar', undefined, 'abcd'), 'https://example.com/test.conf?foo=bar&access_token=abcd');
 });
 
 test('normalizeClashProxyGroupConfig', t => {
@@ -284,6 +285,11 @@ test('normalizeClashProxyGroupConfig', t => {
       {
         name: '🚀 Proxy',
         type: 'select',
+      },
+      {
+        name: '🚀 Proxy 2',
+        type: 'select',
+        proxies: ['Another Proxy'],
       },
       {
         name: 'US',
@@ -318,6 +324,11 @@ test('normalizeClashProxyGroupConfig', t => {
         proxies: ['🚀 Proxy', 'US'],
         type: 'fallback',
       },
+      {
+        name: 'fallback-auto-no-filter',
+        proxies: ['🚀 Proxy', 'US'],
+        type: 'fallback',
+      },
     ];
   }
   const result = [
@@ -325,6 +336,11 @@ test('normalizeClashProxyGroupConfig', t => {
       name: '🚀 Proxy',
       type: 'select',
       proxies: ['🇭🇰HK(Example)'],
+    },
+    {
+      name: '🚀 Proxy 2',
+      type: 'select',
+      proxies: ['Another Proxy'],
     },
     {
       name: 'US',
@@ -363,6 +379,13 @@ test('normalizeClashProxyGroupConfig', t => {
       name: 'fallback-auto',
       type: 'fallback',
       proxies: ['🚀 Proxy', 'US', '🇭🇰HK(Example)'],
+      url: PROXY_TEST_URL,
+      interval: PROXY_TEST_INTERVAL,
+    },
+    {
+      name: 'fallback-auto-no-filter',
+      type: 'fallback',
+      proxies: ['🚀 Proxy', 'US'],
       url: PROXY_TEST_URL,
       interval: PROXY_TEST_INTERVAL,
     },
@@ -451,65 +474,6 @@ test('getShadowsocksJSONConfig', async t => {
     obfs: 'tls',
     'obfs-host': 'gateway-carry.icloud.com',
   });
-});
-
-test('loadRemoteSnippetList', async t => {
-  const remoteSnippetList = await utils.loadRemoteSnippetList([
-    {
-      url: 'http://example.com/telegram.list',
-      name: 'telegram',
-    },
-    {
-      url: 'http://example.com/netflix.list',
-      name: 'netflix',
-    },
-    {
-      url: 'http://example.com/test-ruleset.list',
-      name: 'test',
-    },
-  ]);
-
-  const result1 = 'IP-CIDR,91.108.56.0/22,Proxy,no-resolve\n' +
-    'IP-CIDR,91.108.4.0/22,Proxy,no-resolve\n' +
-    'IP-CIDR,91.108.8.0/22,Proxy,no-resolve\n' +
-    'IP-CIDR,109.239.140.0/24,Proxy,no-resolve\n' +
-    'IP-CIDR,149.154.160.0/20,Proxy,no-resolve\n' +
-    'IP-CIDR,149.154.164.0/22,Proxy,no-resolve\n' +
-    'IP-CIDR,149.154.172.0/22,Proxy,no-resolve\n' +
-    'IP-CIDR,91.108.12.0/22,Proxy,no-resolve';
-  const result2 = '# Netflix\n' +
-    'USER-AGENT,Argo*,Proxy\n' +
-    'DOMAIN-SUFFIX,fast.com,Proxy\n' +
-    'DOMAIN-SUFFIX,netflix.com,Proxy\n' +
-    'DOMAIN-SUFFIX,netflix.net,Proxy\n' +
-    'DOMAIN-SUFFIX,nflxext.com,Proxy\n' +
-    'DOMAIN-SUFFIX,nflximg.com,Proxy\n' +
-    'DOMAIN-SUFFIX,nflximg.net,Proxy\n' +
-    'DOMAIN-SUFFIX,nflxso.net,Proxy\n' +
-    'DOMAIN-SUFFIX,nflxvideo.net,Proxy';
-  const result3 = '# China Apps\n' +
-    'USER-AGENT,MicroMessenger Client,Proxy\n' +
-    'USER-AGENT,WeChat*,Proxy\n' +
-    'USER-AGENT,MApi*,Proxy // Dianping\n' +
-    'IP-CIDR,149.154.164.0/22,Proxy,no-resolve // Telegram';
-
-  t.is(remoteSnippetList[0].main('Proxy'), result1);
-  t.is(remoteSnippetList[1].main('Proxy'), result2);
-  t.is(remoteSnippetList[2].main('Proxy'), result3);
-});
-
-test('loadRemoteSnippetList with error', async t => {
-  t.plan(1);
-  try {
-    const res = await utils.loadRemoteSnippetList([
-      {
-        url: 'http://example.com/error',
-        name: 'error',
-      },
-    ]);
-  } catch (err) {
-    t.truthy(err instanceof Error);
-  }
 });
 
 test('getV2rayNSubscription', async t => {

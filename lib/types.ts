@@ -23,6 +23,7 @@ export interface CommandConfig {
   readonly artifacts: ReadonlyArray<ArtifactConfig>;
   readonly remoteSnippets?: ReadonlyArray<RemoteSnippetConfig>;
   readonly urlBase: string;
+  publicUrl: string; // tslint:disable-line:readonly-keyword
   readonly providerDir: string;
   readonly templateDir: string;
   readonly configDir: string;
@@ -37,15 +38,18 @@ export interface CommandConfig {
   readonly binPath?: {
     readonly shadowsocksr?: string;
     readonly v2ray?: string;
-    vmess?: string; // tslint:disable-line
+    vmess?: string; // tslint:disable-line:readonly-keyword
   };
   readonly surgeConfig?: {
     readonly v2ray?: 'native'|'external';
     readonly resolveHostname?: boolean;
   };
+  readonly quantumultXConfig?: {
+    readonly deviceIds?: ReadonlyArray<string>;
+  };
   readonly gateway?: {
     readonly accessToken?: string;
-    readonly auth?: boolean;
+    auth?: boolean; // tslint:disable-line:readonly-keyword
   },
   readonly proxyTestUrl?: string;
   readonly proxyTestInterval?: number;
@@ -71,6 +75,7 @@ export interface ArtifactConfig {
   readonly customParams?: PlainObjectOf<string|boolean|number>;
   readonly proxyGroupModifier?: ProxyGroupModifier;
   readonly destDir?: string;
+  readonly templateString?: string;
 }
 
 export interface ProviderConfig {
@@ -84,6 +89,7 @@ export interface ProviderConfig {
   };
   readonly addFlag?: boolean;
   readonly tfo?: boolean;
+  readonly renameNode?: (name: string) => string;
 }
 
 export interface BlackSSLProviderConfig extends ProviderConfig {
@@ -186,6 +192,10 @@ export interface SimpleNodeConfig {
 
 export interface PlainObject { readonly [name: string]: any }
 export interface PlainObjectOf<T> { readonly [name: string]: T }
+
+export interface CreateServerOptions {
+  readonly cwd?: string;
+}
 
 export type NodeFilterType = (nodeConfig: PossibleNodeConfigType) => boolean;
 

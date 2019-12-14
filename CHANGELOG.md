@@ -1,3 +1,152 @@
+## [1.8.5](https://github.com/geekdada/surgio/compare/v1.8.4...v1.8.5) (2019-12-11)
+
+
+### Features
+
+* 更新 netflixFilter ([515cbe5](https://github.com/geekdada/surgio/commit/515cbe5a179f6a7a364dc4e0eba72f264fb82b57))
+* 更新国旗数据库 ([18f22d2](https://github.com/geekdada/surgio/commit/18f22d213e90fc9f680323439cbe4082ea2b171b))
+* 支持修改节点名 ([4437f0e](https://github.com/geekdada/surgio/commit/4437f0e628d13ae5f675b04aa0b7e44b66bc37a7))
+
+
+
+## [1.8.4](https://github.com/geekdada/surgio/compare/v1.8.3...v1.8.4) (2019-12-10)
+
+
+### Bug Fixes
+
+* Ruleset 中 IP-CIDR6 的处理不当 ([edee2bd](https://github.com/geekdada/surgio/commit/edee2bd3de6a3154f651629b780319533bd5445b))
+
+
+
+## [1.8.3](https://github.com/geekdada/surgio/compare/v1.8.2...v1.8.3) (2019-12-04)
+
+
+### Bug Fixes
+
+* 在某些情况下 Clash 的策略组中没输出 url 和 interval ([3884014](https://github.com/geekdada/surgio/commit/3884014c2296a59de90ae5f5e4803a3609f7893d))
+* broken test ([794be85](https://github.com/geekdada/surgio/commit/794be85268811ab665351ab255f368bc4a6d0754))
+
+
+
+## [1.8.2](https://github.com/geekdada/surgio/compare/v1.8.1...v1.8.2) (2019-11-27)
+
+
+### Bug Fixes
+
+* clash conf empty line ([5af023d](https://github.com/geekdada/surgio/commit/5af023d8e96cda22e5df82bfebb18aaca19ccf33))
+
+
+
+## [1.8.1](https://github.com/geekdada/surgio/compare/v1.8.0...v1.8.1) (2019-11-27)
+
+
+### Bug Fixes
+
+* remote-snippet cache throw error in non-now deployment ([a848988](https://github.com/geekdada/surgio/commit/a848988d2ed393ae1afa14bd5812eed989e9ffc5))
+
+
+
+# [1.8.0](https://github.com/geekdada/surgio/compare/v1.7.1...v1.8.0) (2019-11-27)
+
+
+### Bug Fixes
+
+* **gateway:** content-type validation ([9b73c03](https://github.com/geekdada/surgio/commit/9b73c03fa3392e076cfed8d72833bf999a989b7b))
+
+
+### Features
+
+* **gateway:** 支持批量转换 rewrite-remote 中的 URL ([f589a83](https://github.com/geekdada/surgio/commit/f589a83c48ef66199fc6b00cb7bf5d96a4899a19))
+
+
+
+## [1.7.1](https://github.com/geekdada/surgio/compare/v1.7.1-2...v1.7.1) (2019-11-26)
+
+
+### Features
+
+* **utils:** 重写了 Ruleset 的解析，支持所有 Ruleset 规则了 ([1717964](https://github.com/geekdada/surgio/commit/17179642250ea654931f837a186f10b4d88fc653))
+
+
+
+## [1.7.1-2](https://github.com/geekdada/surgio/compare/v1.7.1-1...v1.7.1-2) (2019-11-26)
+
+
+### Features
+
+* always add domain to surge external provider's args ([98ebd89](https://github.com/geekdada/surgio/commit/98ebd8963f582c934f26f5beff93b362ccfdaa2d))
+
+
+
+## [1.7.1-1](https://github.com/geekdada/surgio/compare/v1.7.1-0...v1.7.1-1) (2019-11-26)
+
+
+### Features
+
+* **gateway:** 延长缓存时间至 12 个小时并增加环境变量配置 ([c7bdc5e](https://github.com/geekdada/surgio/commit/c7bdc5e289f9ee0b8063a2fafac94b24008ec909))
+* **utils:** 优化远程片段缓存读取 ([e8133f5](https://github.com/geekdada/surgio/commit/e8133f5abf0f52fa29d6d60db8675e95f60a5e11))
+
+
+
+## [1.7.1-0](https://github.com/geekdada/surgio/compare/v1.7.0...v1.7.1-0) (2019-11-24)
+
+
+### Features
+
+* 在 Now 平台上开启文件缓存，加快启动速度 ([4456d2e](https://github.com/geekdada/surgio/commit/4456d2eb8b7bd5f387bab96d78e38b8f79c86cb3))
+* 支持转换 Surge 的 Script 部分规则到 Quantumult X 格式 ([82633d2](https://github.com/geekdada/surgio/commit/82633d24221b14931d8c5ad367bb7c88ec7a7952))
+
+
+
+# [1.7.0](https://github.com/geekdada/surgio/compare/v1.6.2...v1.7.0) (2019-11-23)
+
+
+### Bug Fixes
+
+* destDir 兼容 windows 地址 ([e9b60e8](https://github.com/geekdada/surgio/commit/e9b60e8e5d4799b79031f7aecd13e1b9081657c4))
+
+
+### Features
+
+* 支持给 qx 远程 script 添加 device id ([e9b9790](https://github.com/geekdada/surgio/commit/e9b97905e63ee1662310b4b4353308836093316d))
+
+
+
+## [1.6.2](https://github.com/geekdada/surgio/compare/v1.6.1...v1.6.2) (2019-11-21)
+
+
+### Bug Fixes
+
+* 规则过滤会吃掉内容的问题 ([699b875](https://github.com/geekdada/surgio/commit/699b8750f9b8a4c8ef916f2ad9dfa9b8bf95333c))
+
+
+
+## [1.6.1](https://github.com/geekdada/surgio/compare/v1.6.0...v1.6.1) (2019-11-20)
+
+
+### Bug Fixes
+
+* getDownloadUrl 某些情况下无法正确输出 access_token ([ce5cb2d](https://github.com/geekdada/surgio/commit/ce5cb2dd36d8f0d67b4bcf0c01efb77ea10cb4ca))
+* urlBase 错误 ([d1e87dd](https://github.com/geekdada/surgio/commit/d1e87dd4770773bf8ea2763e39a31bb90ee68c62))
+
+
+
+# [1.6.0](https://github.com/geekdada/surgio/compare/v1.5.0...v1.6.0) (2019-11-20)
+
+
+### Bug Fixes
+
+* broken ([53b65cc](https://github.com/geekdada/surgio/commit/53b65ccbd97a8d05c2fb5c173d51caadf2f35e78))
+
+
+### Features
+
+* 网关 get-artifact 支持直接输出 surge 和 qx 的节点列表 ([97f78c4](https://github.com/geekdada/surgio/commit/97f78c49ba3eeb050361807e2cbbfc44523f0804))
+* 优化 dns 解析 ([345790e](https://github.com/geekdada/surgio/commit/345790eecd6b2f4745b91999004d921f41b259bc))
+* 在模板中输出 proxyTestUrl ([b95cd8b](https://github.com/geekdada/surgio/commit/b95cd8b157e902a920699618cf1e61d1f615fd31))
+
+
+
 # [1.5.0](https://github.com/geekdada/surgio/compare/v1.4.3...v1.5.0) (2019-11-18)
 
 

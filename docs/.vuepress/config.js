@@ -7,6 +7,10 @@ module.exports = {
     }
   },
   themeConfig: {
+    algolia: {
+      apiKey: '6e7242cfd891a169eb12749ab473ba8f',
+      indexName: 'surgio',
+    },
     nav: [
       {
         text: 'Changelog',
@@ -35,6 +39,7 @@ module.exports = {
                 'custom-artifact',
               ]
             },
+            'api',
             '0.x-to-1.0',
           ]
         },
@@ -57,7 +62,13 @@ module.exports = {
       '@vuepress/google-analytics',
       {
         'ga': 'UA-146417304-1'
-      }
-    ]
+      },
+    ],
+    [
+      'vuepress-plugin-sitemap',
+      {
+        hostname: 'https://surgio.royli.dev',
+      },
+    ],
   ]
 };

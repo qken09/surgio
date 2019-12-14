@@ -47,7 +47,7 @@ module.exports = {
 这个功能和 Surge 本身的 `RULE-SET` 功能无关，所以生成出来的规则可以在老版本的 Surge 和其它客户端中使用。
 :::
 
-远程片段。你可以在这里配置符合 [Surge Rule Set 标准](https://nssurge.zendesk.com/hc/zh-cn/articles/360010038714-Surge-Mac-3-Release-Note) 的文件，然后在模板中使用它们。
+远程片段。你可以在这里配置符合 [Surge Ruleset 标准](https://nssurge.zendesk.com/hc/zh-cn/articles/360010038714-Surge-Mac-3-Release-Note) 的文件，然后在模板中使用它们。
 
 ```js
 module.exports = {
@@ -141,6 +141,16 @@ SSR 的可执行文件地址。请使用 libev 版本的二进制文件，可以
 - 类型: `object`
 - 默认值: `undefined`
 
+```js
+// surgio.conf.js
+module.exports = {
+  surgeConfig: {
+    v2ray: 'native',
+    resolveHostname: true,
+  },
+};
+```
+
 #### surgeConfig.v2ray
 
 - 类型: `string`
@@ -161,6 +171,33 @@ SSR 的可执行文件地址。请使用 libev 版本的二进制文件，可以
 在 Surge 官方对 External Provider 的 [解释](https://medium.com/@Blankwonder/surge-mac-new-features-external-proxy-provider-375e0e9ea660) 中提到，为了不让代理进程（如 ssr-local）的流量经过 Surge 的 TUN 模块，需要额外指定 `addresses` 参数。在之前版本的 Surgio 里，生成的配置不会对域名进行解析，导致实际使用中仍然会造成额外的性能损耗。
 
 打开这个选项后，Surgio 会在生成配置的时候解析域名。不过，这必然会造成生成时间延长，所以请按照个人的需要进行选择。
+
+### quantumultXConfig
+
+- 类型: `object`
+- 默认值: `undefined`
+
+```js
+// surgio.conf.js
+module.exports = {
+  quantumultXConfig: {
+    deviceIds: ['ABCDE12345'],
+  },
+};
+```
+
+#### quantumultXConfig.deviceIds <Badge text="v1.7.0" vertical="middle" />
+
+- 类型: `string[]`
+- 默认值: `undefined`
+
+为了能简便使用 Quantumult X 的第三方远程脚本，你可以在这里设置自己的客户端设备 ID。
+
+:::tip Quantumult X 设备 ID 的获取方法
+点击主页右下角「三角」按钮，再点击右上角「三点」按钮，滚动至页面下方可以看到
+
+<img width="350px" src="./images/qx-device-id.png" alt="">
+:::
 
 ### gateway <Badge text="v1.1.0" vertical="middle" />
 
